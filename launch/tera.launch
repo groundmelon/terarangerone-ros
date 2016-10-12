@@ -1,0 +1,5 @@
+<launch>
+	<node pkg="terarangerone" type="terarangerone_node" name="terarangerone" output="screen">
+		<param name="portname" value="/dev/ttyUSB0" />
+	</node>
+</launch>

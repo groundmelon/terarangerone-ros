@@ -98,6 +98,7 @@ void TerarangerOne::serialDataCallback(uint8_t single_character)
   static uint8_t input_buffer[BUFFER_SIZE];
   static int buffer_ctr = 0;
   static int seq_ctr = 0;
+  static ros::Time last_time(0.0);
 
   sensor_msgs::Range range_msg;
   range_msg.field_of_view = 0.0593;
@@ -123,13 +124,17 @@ void TerarangerOne::serialDataCallback(uint8_t single_character)
       {
         int16_t range = input_buffer[1] << 8;
         range |= input_buffer[2];
-
         if (range < 14000 && range > 200)
         {
-          range_msg.header.stamp = ros::Time::now();
-          range_msg.header.seq = seq_ctr++;
-          range_msg.range = range * 0.001; // convert to m
-          range_publisher_.publish(range_msg);
+          // Add 40 Hz publish
+          ros::Time now_time = ros::Time::now();
+          if ((now_time - last_time) >= ros::Duration(1.0 / 40.0)) {
+            range_msg.header.stamp = ros::Time::now();
+            range_msg.header.seq = seq_ctr++;
+            range_msg.range = range * 0.001; // convert to m
+            range_publisher_.publish(range_msg);
+            last_time = now_time;
+          }
         }
         ROS_DEBUG("[%s] all good %.3f m", ros::this_node::getName().c_str(), range_msg.range);
       }
