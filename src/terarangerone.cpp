@@ -124,17 +124,21 @@ void TerarangerOne::serialDataCallback(uint8_t single_character)
       {
         int16_t range = input_buffer[1] << 8;
         range |= input_buffer[2];
+        int range_for_pub;
         if (range < 14000 && range > 200)
         {
-          // Add 40 Hz publish
-          ros::Time now_time = ros::Time::now();
-          if ((now_time - last_time) >= ros::Duration(1.0 / 40.0)) {
-            range_msg.header.stamp = ros::Time::now();
-            range_msg.header.seq = seq_ctr++;
-            range_msg.range = range * 0.001; // convert to m
-            range_publisher_.publish(range_msg);
-            last_time = now_time;
-          }
+            range_for_pub = range;
+        } else {
+            range_for_pub = 200;
+        }
+        // Add 40 Hz publish
+        ros::Time now_time = ros::Time::now();
+        if ((now_time - last_time) >= ros::Duration(1.0 / 40.0)) {
+          range_msg.header.stamp = ros::Time::now();
+          range_msg.header.seq = seq_ctr++;
+          range_msg.range = range_for_pub * 0.001; // convert to m
+          range_publisher_.publish(range_msg);
+          last_time = now_time;
         }
         ROS_DEBUG("[%s] all good %.3f m", ros::this_node::getName().c_str(), range_msg.range);
       }
