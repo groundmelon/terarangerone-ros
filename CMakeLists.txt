@@ -1,6 +1,25 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(terarangerone)
 
+set(CMAKE_VERBOSE_MAKEFILE "true")
+include(CheckCXXCompilerFlag)
+
+check_cxx_compiler_flag("-std=c++11" COMPILER_SUPPORTS_STD_CXX11)
+if (NOT COMPILER_SUPPORTS_STD_CXX11)
+  check_cxx_compiler_flag("-std=c++0x" COMPILER_SUPPORTS_STD_CXX0X)
+endif ()
+
+if (COMPILER_SUPPORTS_STD_CXX11)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+elseif (COMPILER_SUPPORTS_STD_CXX0X)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+else ()
+  message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
+endif ()
+
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -g -march=native -Wno-unused-result -funroll-loops")
+
+
 # search for everything we need to build the package
 find_package(catkin REQUIRED COMPONENTS
   roscpp

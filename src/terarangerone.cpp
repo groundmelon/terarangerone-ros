@@ -35,8 +35,31 @@
  ****************************************************************************/
 
 #include <string>
-
+#include <deque>
+#include <algorithm>
 #include "terarangerone/terarangerone.h"
+
+class ValueFilter {
+  public:
+    std::deque<double> q;
+    static constexpr size_t max_size = 5;
+
+    void feed(const double x) {
+        q.push_back(x);
+        while (q.size() > max_size) {
+            q.pop_front();
+        }
+    };
+
+    double get() {
+        ROS_ASSERT(q.size());
+        std::deque<double> q_(q);
+        std::sort(q_.begin(), q_.end());
+        return q_.at(q.size()/2);
+    };
+};
+
+ValueFilter value_filter;
 
 namespace terarangerone
 {
@@ -49,6 +72,7 @@ TerarangerOne::TerarangerOne()
 
   // Publishers
   range_publisher_ = nh_.advertise<sensor_msgs::Range>("terarangerone", 1);
+  height_publisher_ = private_node_handle_.advertise<geometry_msgs::Vector3Stamped>("height", 1);
 
   // Create serial port
   serial_port_ = new SerialPort();
@@ -130,15 +154,26 @@ void TerarangerOne::serialDataCallback(uint8_t single_character)
             range_for_pub = range;
         } else {
             range_for_pub = 200;
-        }
+        } 
+        
+        range_msg.header.stamp = ros::Time::now();
+        range_msg.header.seq = seq_ctr++;
+        range_msg.range = range_for_pub * 0.001; // convert to m
+        range_publisher_.publish(range_msg);
+        
+        value_filter.feed(range_for_pub * 0.001);
+        double filtered_value = value_filter.get();
+        // ROS_INFO("%f --> %f", range_for_pub * 0.001, filtered_value);
+
         // Add 40 Hz publish
         ros::Time now_time = ros::Time::now();
         if ((now_time - last_time) >= ros::Duration(1.0 / 40.0)) {
-          range_msg.header.stamp = ros::Time::now();
-          range_msg.header.seq = seq_ctr++;
-          range_msg.range = range_for_pub * 0.001; // convert to m
-          range_publisher_.publish(range_msg);
           last_time = now_time;
+
+          geometry_msgs::Vector3Stamped hel_msg;
+          hel_msg.header = range_msg.header;
+          hel_msg.vector.z = filtered_value;
+          height_publisher_.publish(hel_msg);
         }
         ROS_DEBUG("[%s] all good %.3f m", ros::this_node::getName().c_str(), range_msg.range);
       }

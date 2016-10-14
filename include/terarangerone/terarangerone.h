@@ -41,6 +41,7 @@
 #include <sensor_msgs/Range.h>
 #include <std_msgs/Char.h>
 #include <dynamic_reconfigure/server.h>
+#include <geometry_msgs/Vector3Stamped.h>
 
 #include <string>
 
@@ -95,6 +96,7 @@ public:
 
   ros::NodeHandle nh_;
   ros::Publisher range_publisher_;
+  ros::Publisher height_publisher_;
 
   dynamic_reconfigure::Server<terarangerone::TerarangerOneConfig> dyn_param_server_;
   dynamic_reconfigure::Server<terarangerone::TerarangerOneConfig>::CallbackType dyn_param_server_callback_function_;
