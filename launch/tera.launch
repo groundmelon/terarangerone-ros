@@ -1,5 +1,7 @@
 <launch>
 	<node pkg="terarangerone" type="terarangerone_node" name="terarangerone" output="screen">
 		<param name="portname" value="/dev/ttyUSB0" />
+		<param name="fps" type="double" value="40.0" />
+		<param name="median_filter_size" type="int" value="5" />
 	</node>
 </launch>

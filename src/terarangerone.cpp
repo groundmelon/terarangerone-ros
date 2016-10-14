@@ -42,11 +42,13 @@
 class ValueFilter {
   public:
     std::deque<double> q;
-    static constexpr size_t max_size = 5;
+    int max_size;
+
+    ValueFilter(): max_size(3){};
 
     void feed(const double x) {
         q.push_back(x);
-        while (q.size() > max_size) {
+        while (q.size() > static_cast<size_t>(max_size)) {
             q.pop_front();
         }
     };
@@ -59,7 +61,8 @@ class ValueFilter {
     };
 };
 
-ValueFilter value_filter;
+ValueFilter g_value_filter;
+ros::Duration g_fps_interval;
 
 namespace terarangerone
 {
@@ -161,13 +164,12 @@ void TerarangerOne::serialDataCallback(uint8_t single_character)
         range_msg.range = range_for_pub * 0.001; // convert to m
         range_publisher_.publish(range_msg);
         
-        value_filter.feed(range_for_pub * 0.001);
-        double filtered_value = value_filter.get();
+        g_value_filter.feed(range_for_pub * 0.001);
+        double filtered_value = g_value_filter.get();
         // ROS_INFO("%f --> %f", range_for_pub * 0.001, filtered_value);
 
-        // Add 40 Hz publish
         ros::Time now_time = ros::Time::now();
-        if ((now_time - last_time) >= ros::Duration(1.0 / 40.0)) {
+        if ((now_time - last_time) >= g_fps_interval) {
           last_time = now_time;
 
           geometry_msgs::Vector3Stamped hel_msg;
@@ -230,7 +232,18 @@ void TerarangerOne::dynParamCallback(const terarangerone::TerarangerOneConfig &c
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "terarangerone");
+  ros::NodeHandle nh("~");
+
+  // set fps
+  double fps;
+  nh.param("fps", fps, 40.0);
+  g_fps_interval = ros::Duration(1.0 / fps);
+
+  // set median filter window size
+  nh.param("median_filter_size", g_value_filter.max_size, 3);
+  
   terarangerone::TerarangerOne tera_bee;
+
   ros::spin();
 
   return 0;
